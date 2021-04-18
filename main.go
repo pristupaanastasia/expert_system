@@ -25,7 +25,9 @@ func ifOnlyIf(a bool,b bool) bool{
 	if (a && !b) || (!a && b){
 		return false
 	}
+	return false
 }
+
 func implies(a bool,b bool) bool{
 	if a && !b{
 		return false
@@ -33,7 +35,7 @@ func implies(a bool,b bool) bool{
 	return true
 
 }
-func initOper()  map[byte]int{
+func initOper()  map[byte]int {
 	oper := make(map[byte]int)
 	oper['('] = 3
 	oper[')'] = 3
@@ -43,28 +45,88 @@ func initOper()  map[byte]int{
 	oper['^'] = 2
 	oper['-'] = 4// <=>
 	oper['='] = 4//=>
-
 	return oper
 }
-func computation(mass [][]byte, val map[byte]bool, res []byte){
-	back := make(map[byte]bool)
-	result := make(map[byte]bool)
 
-	for
+func recurs(mass []byte, valueByte map[byte]bool) bool {
+	st := make([]bool, 0)
+	fmt.Printf(" mass %s \n",string(mass))
+	for _, val := range mass {
+		if (val >= 'A') && (val <= 'Z') {
+			st = append(st, valueByte[val])
+		} else {
+			if val == '!' && len(st) > 0 {
+				st[len(st)-1] = !st[len(st)-1]
+			} else {
+				if len(st) > 1 {
+					var buf bool
+					if val == '-' {
+						buf = ifOnlyIf(st[len(st)-2], st[len(st)-1])
+					}
+					if val == '=' {
+						buf = implies(st[len(st)-2], st[len(st)-1])
+					}
+					if val == '+' {
+						buf = and(st[len(st)-2], st[len(st)-1])
+					}
+					if val == '^' {
+						buf = xor(st[len(st)-2], st[len(st)-1])
+					}
+					if val == '|' {
+						buf = or(st[len(st)-2], st[len(st)-1])
+					}
+					st = st[:len(st)-2]
+					st = append(st, buf)
+				}
+			}
+		}
+	}
+	fmt.Println(st," len ", len(st))
+	return st[0]
 }
-func polsky(val [][]byte, oper map[byte]int) [][]byte{
 
-	mass := make([][]byte,len(val))
-	for i, val :=range val{
+
+
+func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
+	result := make(map[byte]bool)
+	for _, val := range mass {
+		if len(val) >0 {
+			j := 0
+			for j < len(res) {
+				if !recurs(val, valueByte) {
+					//brutforce
+				} else {
+					break
+				}
+
+			}
+			if j == len(res){
+				fmt.Println("No result")
+			}
+			if j > 0 {
+				result[res[j-1]] = valueByte[res[j-1]]
+			}
+		}
+	}
+	fmt.Printf("RESULT: ")
+	for key, value := range result{
+		fmt.Printf("key %s val %t \n", string(key), value)
+	}
+}
+
+func polsky(valOper [][]byte, oper map[byte]int) [][]byte{
+
+	mass := make([][]byte,len(valOper))
+	for i, initoper :=range valOper{
 		buf := make([]byte,0)
 		stackOper := make([]byte,0)
-		for _, v := range val{
-			if v >= 'A' && v <= 'Z'{
-				buf = append(buf,v)
+		for _, value := range initoper{
+			if value >= 'A' && value <= 'Z'{
+				buf = append(buf,value)
 
 			}else{
-				if oper[v] > 0{
-					if v == ')' && len(stackOper) > 1{
+				if oper[value] > 0{
+					if value == ')' && len(stackOper) > 1{
 						j := len(stackOper) -1
 						for stackOper[j] != '(' && len(stackOper) > 0{
 							buf = append(buf,stackOper[j])
@@ -72,12 +134,12 @@ func polsky(val [][]byte, oper map[byte]int) [][]byte{
 							j--
 						}
 					}else {
-						if len(stackOper) > 0 && oper[v] > oper[stackOper[len(stackOper)-1]] {
+						if len(stackOper) > 0 && oper[value] > oper[stackOper[len(stackOper)-1]] {
 							buf = append(buf, stackOper[len(stackOper)-1])
 							stackOper = stackOper[:len(stackOper)-1]
-							stackOper = append(stackOper, v)
+							stackOper = append(stackOper, value)
 						} else {
-							stackOper = append(stackOper, v)
+							stackOper = append(stackOper, value)
 						}
 					}
 					//fmt.Printf("%s \n",string(buf))
@@ -94,12 +156,12 @@ func polsky(val [][]byte, oper map[byte]int) [][]byte{
 
 }
 
-func calculation(data []byte, val map[byte]bool, res []byte){
+func calcul(data []byte, val map[byte]bool, res []byte){
 	mass := make([][]byte,len(val))
 	j :=0
 	oper := initOper()
-	for i, _ := range data{
-		if data[i] == '\n' && data[i+1] >= 'A' && data[i+1] <= 'Z'{
+	for i := range data{
+		if data[i] == '\n' && len(data) > i + 1 && data[i+1] >= 'A' && data[i+1] <= 'Z'{
 			buf := make([]byte,0)
 			for data[i + 1] != '\n' && data[i + 1] != '#'{
 				if (data[i] >= 'A' && data[i] <= 'Z') || (data[i] == '=' && data[i+1] == '>') || oper[data[i]] > 0  {
@@ -115,19 +177,17 @@ func calculation(data []byte, val map[byte]bool, res []byte){
 			j++
 		}
 	}
-	for _,val := range mass{
-		fmt.Println("b:", string(val))
-	}
+
 	sort.Slice(mass,func(i,j int) bool {
 		return len(mass[i]) < len(mass[j])
 	})
-	for _,val := range mass{
-		fmt.Println("SORT:", string(val))
+	for _,value := range mass{
+		fmt.Println("SORT:", string(value))
 	}
 
 	mass = polsky(mass, oper)
-	for _,val := range mass{
-		fmt.Println("polsky:", string(val))
+	for _,value := range mass{
+		fmt.Println("polsky:", string(value))
 	}
 	computation(mass,val,res)
 }
@@ -135,13 +195,13 @@ func calculation(data []byte, val map[byte]bool, res []byte){
 func parseData(data []byte){
 	val := make(map[byte]bool)
 	res := make([]byte, 0)
-	for i, _ := range data{
+	for i  := range data{
 		if data[i] >= 'A' && data[i] <= 'Z'{
 			val[data[i]] = false
 		}
 		if data[i] == '=' && len(data) > i+1 && data[i+1] >= 'A' && data[i+1] <= 'Z'{
 			i++
-			for data[i] != ' '{
+			for data[i] != ' ' && data[i] != '\n'{
 				_, ok := val[data[i]]; if ok{
 					val[data[i]] = true
 				}else{
@@ -153,7 +213,7 @@ func parseData(data []byte){
 		}
 		if data[i] == '?' && len(data) > i+1{
 			i++
-			for data[i] != ' ' {
+			for data[i] != ' ' &&  data[i] != '\n'{
 				_, ok := val[data[i]]; if ok{
 					res = append(res, data[i])
 				}else{
@@ -166,8 +226,7 @@ func parseData(data []byte){
 
 	}
 	fmt.Printf(string(res))
-	calculation(data,val,res)
-
+	calcul(data,val,res)
 }
 
 func main(){
@@ -175,7 +234,12 @@ func main(){
 
 		data := make([]byte,0)
 		file, err := os.Open(os.Args[1])
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+
+			}
+		}(file)
 		if err != nil{
 			fmt.Printf(err.Error())
 			os.Exit(1)
@@ -186,7 +250,7 @@ func main(){
 			if err == io.EOF{   // если конец файла
 				break           // выходим из цикла
 			}
-			//fmt.Print(string(buf[:n]))
+			fmt.Print(string(buf[:n]))
 			buf = buf[:n]
 			data = append(data,buf...)
 		}
