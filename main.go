@@ -52,11 +52,16 @@ func recurs(mass []byte, valueByte map[byte]bool) bool {
 	st := make([]bool, 0)
 	fmt.Printf(" mass %s \n",string(mass))
 	for _, val := range mass {
-		if (val >= 'A') && (val <= 'Z') {
+		if _,ok := valueByte[val]; ok && (val >= 'A') && (val <= 'Z') {
 			st = append(st, valueByte[val])
 		} else {
+			if _,ok = valueByte[val]; !ok && (val >= 'A') && (val <= 'Z'){
+				return false
+			}
 			if val == '!' && len(st) > 0 {
+				fmt.Printf("suka negativ %v\n",st[len(st)-1])
 				st[len(st)-1] = !st[len(st)-1]
+				fmt.Printf("lya negativ %v\n",st[len(st)-1])
 			} else {
 				if len(st) > 1 {
 					var buf bool
@@ -75,10 +80,12 @@ func recurs(mass []byte, valueByte map[byte]bool) bool {
 					if val == '|' {
 						buf = or(st[len(st)-2], st[len(st)-1])
 					}
+					fmt.Printf("lya sho za huina %s \n",string(val))
 					st = st[:len(st)-2]
 					st = append(st, buf)
 				}
 			}
+			fmt.Printf("stack %v\n",st[len(st)-1])
 		}
 	}
 	fmt.Println(st," len ", len(st))
@@ -94,30 +101,37 @@ func nores(value byte, res []byte) bool{
 	return true
 }
 
-func brutforce(val map[byte]bool, mass []byte, res []byte) (map[byte]bool, byte){
+func brutforce(val map[byte]bool, mass []byte, res []byte) (map[byte]bool, []byte){
+	var buf []byte
 	for _, value :=range mass{
 		if value >= 'A' && value <= 'Z' && nores(value,res){
 			if _, ok := val[value]; !ok {
-				val[value] = true
-				buf := value
-				return val,buf
+				val[value] = false
+				buf = append(buf,value)
+
 			}
 		}
+	}
+	if len(buf)>0{
+		return val,buf
 	}
 	for _, value :=range mass{
 		if value >= 'A' && value <= 'Z' && nores(value,res){
 			if _, ok := val[value]; ok{
-				val[value] = false
-				buf := value
-				return val,buf
+				val[value] = true
+				buf = append(buf,value)
+
 			}
 		}
 	}
-	return nil, 0
+	if len(buf)>0{
+		return val,buf
+	}
+	return nil, nil
 }
 
 func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
-	var buf byte
+	var buf []byte
 	var newval map[byte]bool
 
 	result := make([]byte, 0)
@@ -125,28 +139,39 @@ func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
 		result = append(result,k)
 	}
 	for _, val := range mass {
-		buf = 0
+		buf = nil
 		if len(val) >0 {
+			newval = valueByte
 			for !recurs(val, valueByte) {
-				newval, buf = brutforce(valueByte,val,result)
-				if valueByte == nil{
+				for _,l:=range mass {
+					fmt.Printf("solution %s \n", string(l))
+				}
+				newval, buf = brutforce(newval,val,result)
+				if newval == nil{
 					fmt.Printf("Sorry i didn't find solution")
 					return
 				}
-				for key, value := range valueByte{
-					fmt.Printf("key %s val %t \n", string(key), value)
-				}
+				//for key, value := range newval{
+				//	fmt.Printf("key %s val %t \n", string(key), value)
+				//}
 			}
-			if buf != 0{
+			if len(buf)>0{
 				valueByte = newval
-				result = append(result, buf)
+				result = append(result, buf...)
 			}
 
 		}
 	}
 	fmt.Printf("RESULT: ")
 	for key, value := range valueByte{
+
 		fmt.Printf("key %s val %t \n", string(key), value)
+	}
+	//fmt.Printf("res %s \n",string(res))
+	for _,val := range res{
+		if _, ok := valueByte[val]; ok{
+			fmt.Printf("RESULT %s %+v \n",string(val),valueByte[val])
+		}
 	}
 }
 
@@ -193,27 +218,44 @@ func polsky(valOper [][]byte, oper map[byte]int) [][]byte{
 }
 
 func sortCalc(mass[][]byte, val map[byte]bool) [][]byte{
+	var buff [][]byte
 	newSlice := make([][]byte,0)
 	i:=0
 	for i < len(mass) {
+		fmt.Printf("mass i %s %d\n",mass[i],i)
 		for _,value := range mass[i]{
-			if _,ok := val[value]; ok{
+			if _,ok := val[value]; ok && len(mass) > 2 {
 				newSlice = append(newSlice, mass[i])
-				buff := mass[i+1:]
-				mass = mass[0:i]
+				if i +1 <len(mass) {
+					buff = mass[i+1:]
+				}else{
+					buff = mass[0:0]
+				}
+				if i > 0 {
+					mass = mass[0 : i]
+				}else{
+					mass = mass[0:0]
+				}
 				mass = append(mass,buff...)
 				i--
-				continue
+				break
 			}
 		}
 		i++
 	}
-	for j,_ := range mass{
-		newSlice = append(newSlice, mass[j])
-		buff := mass[j+1:]
-		mass = mass[0:j]
-		mass = append(mass,buff...)
+	fmt.Printf("mass %s \n",mass)
+	fmt.Printf("newsLICW %s \n",newSlice)
+
+	for len(mass) >0{
+		fmt.Printf("mass %s \n",mass)
+		fmt.Printf("newsLICW %s \n",newSlice)
+		newSlice = append(newSlice, mass[0])
+		mass = mass[1:]
+
 	}
+	fmt.Printf("mass %s \n",mass)
+	fmt.Printf("newsLICW %s \n",newSlice)
+
 	return newSlice
 }
 
@@ -239,25 +281,25 @@ func calcul(data []byte, val map[byte]bool, res []byte){
 			}
 			mass = append(mass, []byte{})
 			mass[j] = append(mass[j], buf...)
-			fmt.Printf("MASS %+v \n",string(mass[j]))
 			j++
 		}
-	}
-
-	sort.Slice(mass,func(i,j int) bool {
-		return len(mass[i]) < len(mass[j])
-	})
-	if len(mass)>2 {
-		mass = sortCalc(mass, val)
 	}
 	for _,value := range mass{
 		fmt.Println("SORT:", string(value))
 	}
+	sort.Slice(mass,func(i,j int) bool {
+		return len(mass[i]) < len(mass[j])
+	})
+
+	if len(mass)>2 {
+		mass = sortCalc(mass, val)
+	}
+
 
 	mass = polsky(mass, oper)
-	for _,value := range mass{
-		fmt.Println("polsky:", string(value))
-	}
+	//for _,value := range mass{
+	//	fmt.Println("polsky:", string(value))
+	//}
 	computation(mass,val,res)
 }
 
@@ -270,7 +312,7 @@ func parseData(data []byte){
 		}
 		if data[i] == '=' && len(data) > i+1 && data[i+1] >= 'A' && data[i+1] <= 'Z'{
 			i++
-			for data[i] != ' ' && data[i] != '\n'{
+			for i < len(data) && data[i] != ' ' && data[i] != '\n'{
 				//_, ok := val[data[i]]; if ok{
 					val[data[i]] = true
 				//}else{
@@ -280,7 +322,7 @@ func parseData(data []byte){
 				i++
 			}
 		}
-		if data[i] == '?' && len(data) > i+1{
+		if len(data) > i+1 && data[i] == '?' {
 			i++
 			for  i < len(data) && data[i] != ' ' &&  data[i] != '\n'{
 				//_, ok := val[data[i]]; if ok{

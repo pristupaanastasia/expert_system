@@ -1,6 +1,13 @@
-A | B | C => E
-X => B
 
-=X
+B => A
+D + E => B 
+G + H => F 
+I + J => G 
+G => H 
+L + M => K 
+O + P => L + N 
+N => M 
 
-?E
+
+?AFKP
+=DEIJOP
