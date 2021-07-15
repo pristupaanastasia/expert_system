@@ -37,31 +37,32 @@ func implies(a bool,b bool) bool{
 }
 func initOper()  map[byte]int {
 	oper := make(map[byte]int)
-	oper['('] = 3
-	oper[')'] = 3
+	oper['('] = 4
+	oper[')'] = 4
 	oper['!'] = 1
 	oper['+'] = 2
-	oper['|'] = 1
+	oper['|'] = 2
 	oper['^'] = 2
-	oper['-'] = 4// <=>
-	oper['='] = 4//=>
+	oper['-'] = 3// <=>
+	oper['='] = 3//=>
 	return oper
 }
 
 func recurs(mass []byte, valueByte map[byte]bool) bool {
 	st := make([]bool, 0)
-	fmt.Printf(" mass %s \n",string(mass))
+	
 	for _, val := range mass {
 		if _,ok := valueByte[val]; ok && (val >= 'A') && (val <= 'Z') {
 			st = append(st, valueByte[val])
+			
 		} else {
 			if _,ok = valueByte[val]; !ok && (val >= 'A') && (val <= 'Z'){
 				return false
 			}
 			if val == '!' && len(st) > 0 {
-				fmt.Printf("suka negativ %v\n",st[len(st)-1])
+
 				st[len(st)-1] = !st[len(st)-1]
-				fmt.Printf("lya negativ %v\n",st[len(st)-1])
+		
 			} else {
 				if len(st) > 1 {
 					var buf bool
@@ -80,12 +81,12 @@ func recurs(mass []byte, valueByte map[byte]bool) bool {
 					if val == '|' {
 						buf = or(st[len(st)-2], st[len(st)-1])
 					}
-					fmt.Printf("lya sho za huina %s \n",string(val))
+				
 					st = st[:len(st)-2]
 					st = append(st, buf)
 				}
 			}
-			fmt.Printf("stack %v\n",st[len(st)-1])
+
 		}
 	}
 	fmt.Println(st," len ", len(st))
@@ -136,30 +137,55 @@ func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
 
 	result := make([]byte, 0)
 	for k, _ := range valueByte{
+		fmt.Printf("valubyte %s \n",string(k))
 		result = append(result,k)
 	}
-	for _, val := range mass {
+	i:=0
+	
+	for i < len(mass) {
+		prev := newval
 		buf = nil
-		if len(val) >0 {
+		if len(mass[i]) >0 {
 			newval = valueByte
-			for !recurs(val, valueByte) {
-				for _,l:=range mass {
+			
+			for !recurs(mass[i], valueByte) {
+				for _,l:=range mass[i] {
 					fmt.Printf("solution %s \n", string(l))
 				}
-				newval, buf = brutforce(newval,val,result)
+				fmt.Printf("RES %s \n",result)
+				fmt.Printf("val %s \n",string(mass[i]))
+				newval, buf = brutforce(newval,mass[i],result)
+				log.Println(mass[i])
+				fmt.Println(newval)
+				for key, value := range valueByte{
+					fmt.Printf("key %s val %t \n", string(key), value)
+				}
 				if newval == nil{
+					break
+				}
+				
+			}
+			if newval == nil{
+				i--
+				if prev != nil{
+					for k, _ := range prev{
+						if valueByte[k]{
+							fmt.Println(valueByte[k],"k",k,"k")
+							valueByte[k] = false
+							break
+						}
+					}
+				}
+				if i < 0{
 					fmt.Printf("Sorry i didn't find solution")
 					return
 				}
-				//for key, value := range newval{
-				//	fmt.Printf("key %s val %t \n", string(key), value)
-				//}
 			}
-			if len(buf)>0{
+			if len(buf)>0 || newval != nil{
 				valueByte = newval
 				result = append(result, buf...)
+				i++
 			}
-
 		}
 	}
 	fmt.Printf("RESULT: ")
@@ -178,32 +204,40 @@ func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
 func polsky(valOper [][]byte, oper map[byte]int) [][]byte{
 
 	mass := make([][]byte,len(valOper))
+	//fmt.Printf("val oper %s",valOper)
 	for i, initoper :=range valOper{
+	
 		buf := make([]byte,0)
 		stackOper := make([]byte,0)
 		for _, value := range initoper{
 			if value >= 'A' && value <= 'Z'{
 				buf = append(buf,value)
-
+		
 			}else{
 				if oper[value] > 0{
 					if value == ')' && len(stackOper) > 1{
 						j := len(stackOper) -1
 						for stackOper[j] != '(' && len(stackOper) > 0{
 							buf = append(buf,stackOper[j])
+					
 							stackOper = stackOper[:j]
 							j--
 						}
 					}else {
-						if len(stackOper) > 0 && oper[value] > oper[stackOper[len(stackOper)-1]] {
-							buf = append(buf, stackOper[len(stackOper)-1])
-							stackOper = stackOper[:len(stackOper)-1]
-							stackOper = append(stackOper, value)
+						if len(stackOper) > 0 && oper[value] >= oper[stackOper[len(stackOper)-1]] {
+							for len(stackOper) > 0 && oper[value] >= oper[stackOper[len(stackOper)-1]] {
+					
+								buf = append(buf, stackOper[len(stackOper)-1])
+								stackOper = stackOper[:len(stackOper)-1]
+							}
+								stackOper = append(stackOper, value)
+
 						} else {
+					
 							stackOper = append(stackOper, value)
 						}
 					}
-					//fmt.Printf("%s \n",string(buf))
+					fmt.Printf("%s \n",string(buf))
 				}
 			}
 		}
@@ -217,7 +251,7 @@ func polsky(valOper [][]byte, oper map[byte]int) [][]byte{
 
 }
 
-func sortCalc(mass[][]byte, val map[byte]bool) [][]byte{
+func sortCalc(mass[][]byte, val map[byte]bool) [][]byte{//переделать сортировку она не работает
 	var buff [][]byte
 	newSlice := make([][]byte,0)
 	i:=0
@@ -297,9 +331,6 @@ func calcul(data []byte, val map[byte]bool, res []byte){
 
 
 	mass = polsky(mass, oper)
-	//for _,value := range mass{
-	//	fmt.Println("polsky:", string(value))
-	//}
 	computation(mass,val,res)
 }
 
