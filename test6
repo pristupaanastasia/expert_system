@@ -1,0 +1,8 @@
+#Example input 1: 
+B => A 
+C => A 
+
+#[INITIAL FACTS HERE] 
+?A 
+
+=C

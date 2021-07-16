@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
+
 )
+
+
 
 func or(a bool, b bool) bool{
 	return a || b
@@ -131,17 +133,21 @@ func brutforce(val map[byte]bool, mass []byte, res []byte) (map[byte]bool, []byt
 	return nil, nil
 }
 
-func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
+func computation(mass [][]byte, val map[byte]bool, res []byte) {
 	var buf []byte
 	var newval map[byte]bool
-
+	var valueByte map[byte]bool
 	result := make([]byte, 0)
 	for k, _ := range valueByte{
 		fmt.Printf("valubyte %s \n",string(k))
 		result = append(result,k)
 	}
 	i:=0
-	
+
+	strb := make(map[byte]int)
+
+	valueByte = val
+	metka = make(map[byte]int)
 	for i < len(mass) {
 		prev := newval
 		buf = nil
@@ -149,41 +155,78 @@ func computation(mass [][]byte, valueByte map[byte]bool, res []byte) {
 			newval = valueByte
 			
 			for !recurs(mass[i], valueByte) {
-				for _,l:=range mass[i] {
-					fmt.Printf("solution %s \n", string(l))
-				}
 				fmt.Printf("RES %s \n",result)
 				fmt.Printf("val %s \n",string(mass[i]))
 				newval, buf = brutforce(newval,mass[i],result)
-				log.Println(mass[i])
-				fmt.Println(newval)
-				for key, value := range valueByte{
+				for key, value := range newval{
+					if _, ok:=strb[key]; !ok{
+						strb[key] = i
+					}
 					fmt.Printf("key %s val %t \n", string(key), value)
+					// if strb[key] <= i && metka[key]==0{
+						
+					// }
+					valueByte[key] = value
 				}
-				if newval == nil{
-					break
-				}
+				fmt.Println("buf",buf)
+				// if buf == nil{
+				// 	break
+				// }
 				
 			}
-			if newval == nil{
-				i--
-				if prev != nil{
-					for k, _ := range prev{
-						if valueByte[k]{
-							fmt.Println(valueByte[k],"k",k,"k")
-							valueByte[k] = false
-							break
-						}
-					}
-				}
+			
+			if buf == nil{
+				// i--
+				// fmt.Println("new val nil")
+				// if prev != nil{
+				// 	fmt.Println("prev nen nil")
+				// 	flag :=0
+				// 	for k, _ := range prev{
+				// 		_, exist:=val[k]
+				// 		if _,ok :=valueByte[k];ok  && !exist && valueByte[k] {
+				// 			fmt.Println(valueByte[k],"k",k,"k")
+				// 			valueByte[k] = false
+							
+				// 			i = strb[k]
+				// 			for _, l:= range mass[i]{
+				// 				if _,ok:=strb[l];ok && strb[l] < i{
+				// 					i = strb[l]
+				// 					if !recurs(mass[i], valueByte){
+				// 						valueByte[k] = true
+				// 					}
+				// 				}
+				// 			}
+				// 			fmt.Println(valueByte[k],"false")
+				// 			flag = 1
+
+				// 		}
+				// 	}
+				// 	if flag != 1{
+				// 		for k, _ := range prev{
+				// 			_, exist:=val[k]
+				// 			if _,ok :=valueByte[k];ok  && !exist && !valueByte[k] {
+				// 				fmt.Println(valueByte[k],"k",k,"k")
+				// 				valueByte[k] = true
+				// 				i = strb[k]
+				// 				for _, l:= range mass[i]{
+				// 					if _,ok:=strb[l];ok && strb[l] < i{
+				// 						i = strb[l]
+				// 					}
+				// 				}
+				// 				fmt.Println("true",valueByte[k])
+				// 				flag = -1
+
+				// 			}
+				// 		}
+				// 	}
+					
+				//}
 				if i < 0{
 					fmt.Printf("Sorry i didn't find solution")
 					return
 				}
 			}
-			if len(buf)>0 || newval != nil{
-				valueByte = newval
-				result = append(result, buf...)
+			if len(buf)>0 {
 				i++
 			}
 		}
@@ -251,28 +294,19 @@ func polsky(valOper [][]byte, oper map[byte]int) [][]byte{
 
 }
 
-func sortCalc(mass[][]byte, val map[byte]bool) [][]byte{//переделать сортировку она не работает
-	var buff [][]byte
+func sortCalc(mass[][]byte, val map[byte]bool) [][]byte{
+
 	newSlice := make([][]byte,0)
 	i:=0
 	for i < len(mass) {
 		fmt.Printf("mass i %s %d\n",mass[i],i)
 		for _,value := range mass[i]{
-			if _,ok := val[value]; ok && len(mass) > 2 {
+			if _,ok := val[value]; ok && len(mass) > 2  {
 				newSlice = append(newSlice, mass[i])
-				if i +1 <len(mass) {
-					buff = mass[i+1:]
-				}else{
-					buff = mass[0:0]
-				}
-				if i > 0 {
-					mass = mass[0 : i]
-				}else{
-					mass = mass[0:0]
-				}
-				mass = append(mass,buff...)
-				i--
-				break
+				buf := mass[i+1:]
+				mass = mass[0:i]
+				mass = append(mass,buf...)
+
 			}
 		}
 		i++
@@ -321,9 +355,6 @@ func calcul(data []byte, val map[byte]bool, res []byte){
 	for _,value := range mass{
 		fmt.Println("SORT:", string(value))
 	}
-	sort.Slice(mass,func(i,j int) bool {
-		return len(mass[i]) < len(mass[j])
-	})
 
 	if len(mass)>2 {
 		mass = sortCalc(mass, val)
