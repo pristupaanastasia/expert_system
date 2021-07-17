@@ -9,5 +9,8 @@ O + P => L + N
 N => M 
 
 #[INITIAL FACTS HERE] 
-?AFKP 
-=DEIJP#, AFP is true, K is false. 
+?AFKP
+
+=DEIJP
+
+#, AFP is true, K is false.
