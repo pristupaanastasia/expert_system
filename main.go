@@ -54,9 +54,11 @@ func initOper() map[byte]int {
 func recurs(mass []byte, valueByte map[byte]bool) bool {
 	st := make([]bool, 0)
 
+	log.Println(string(mass))
 	for _, val := range mass {
 		if _, ok := valueByte[val]; ok && (val >= 'A') && (val <= 'Z') {
 			st = append(st, valueByte[val])
+			log.Println(st)
 
 		} else {
 			if _, ok = valueByte[val]; !ok && (val >= 'A') && (val <= 'Z') {
@@ -87,12 +89,13 @@ func recurs(mass []byte, valueByte map[byte]bool) bool {
 
 					st = st[:len(st)-2]
 					st = append(st, buf)
+					log.Println(st)
 				}
 			}
 
 		}
 	}
-	fmt.Println(st, " len ", len(st))
+	fmt.Println(st)
 	return st[0]
 }
 
@@ -105,71 +108,30 @@ func nores(value byte, res []byte) bool {
 	return true
 }
 
-func brutforce(val map[byte]bool, mass []byte, res []byte, valRes map[byte]bool, buf []byte) (map[byte]bool, []byte) {
-	flag := 0
-	var newV []byte
-	for _, value := range mass {
-
-		if value >= 'A' && value <= 'Z' && nores(value, res) {
-
-			if _, ok := val[value]; !ok {
-				val[value] = false
-				buf = append(buf, value)
-				log.Println(buf)
-				flag = 1
-			}
-			newV = append(newV, value)
-		}
-	}
-	if flag == 1 {
-		return val, buf
-	}
-	i := 0
-
-	j := 1
-	for j <= len(newV) {
-		i = 0
-		for i < len(newV) {
-
-			if _, ok := valRes[newV[i]]; !ok {
-				val[newV[i]] = true
-				log.Printf(" %s %v \n", string(newV[i]), val[newV[i]])
-				if recurs(mass, val) {
-					return val, buf
-				}
-				if i%j == 0 {
-					val[newV[i]] = false
-					log.Printf(" %s %v \n", string(newV[i]), val[newV[i]])
-				}
-			}
-			i++
-		}
-		j = j * 2
-	}
-	return val, nil
-
-}
-
 func binapp(add map[byte]bool, history []byte, addbin int) map[byte]bool {
-	i := 0
+
 	buf := addbin
 	log.Printf("%b \n", addbin)
 	log.Println("bin ", len(history), string(history))
-	for i < len(history) {
+	i := len(history) - 1
+	for i > -1 {
 
 		log.Printf("add %b \n", addbin)
 		buf = buf & 000000001
-		log.Printf("buf posle %b \n", buf)
+		log.Printf("buf posle %b %s \n", buf, string(history[i]))
 		if buf == 1 {
 			add[history[i]] = true
 		} else {
 			add[history[i]] = false
 		}
-		i++
+		i--
 		addbin = addbin >> 1
 		buf = addbin
 	}
 
+	for k, v := range add {
+		log.Println(string(k), " ", v)
+	}
 	return add
 }
 
@@ -183,38 +145,59 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 
 	for k, v := range val {
 		valueByte[k] = v
-		if v == false {
+		if v == false && nores(k, res) {
 			history = append(history, k)
 		}
 	}
-
+	history = append(history, res...)
 	flag := 0
 	addbin := 0
+	log.Println(string(history))
+	minbaf := make(map[byte]bool)
+	min := -1
 	for {
-		valueByte = binapp(valueByte, history, addbin)
-		for i := range mass {
-			if !recurs(mass[i], valueByte) {
-				log.Println(recurs(mass[i], valueByte))
-				flag = 1
+		for {
+			valueByte = binapp(valueByte, history, addbin)
+			for i := range mass {
+				if !recurs(mass[i], valueByte) {
+					log.Println(recurs(mass[i], valueByte))
+					flag = 1
+				}
+			}
+			if flag == 0 || addbin > len(history)*2 {
+				log.Printf("Done")
+				break
+			}
+			flag = 0
+			addbin++
+		}
+		buf := 0
+		for _, v := range valueByte {
+			if v == true {
+				buf++
 			}
 		}
-		if flag == 0 {
-			log.Printf("Done")
+		if buf < min || min == -1 {
+			min = buf
+			for k, v := range valueByte {
+				minbaf[k] = v
+			}
+		}
+		if addbin > len(history)*2 {
 			break
 		}
-		flag = 0
 		addbin++
 	}
 
 	fmt.Printf("RESULT: ")
-	for key, value := range valueByte {
+	for key, value := range minbaf {
 
 		fmt.Printf("key %s val %t \n", string(key), value)
 	}
 	//fmt.Printf("res %s \n",string(res))
 	for _, va := range res {
-		if _, ok := valueByte[va]; ok {
-			fmt.Printf("RESULT %s %+v \n", string(va), valueByte[va])
+		if _, ok := minbaf[va]; ok {
+			fmt.Printf("RESULT %s %+v \n", string(va), minbaf[va])
 		}
 	}
 }
@@ -255,7 +238,7 @@ func polsky(valOper [][]byte, oper map[byte]int) [][]byte {
 							stackOper = append(stackOper, value)
 						}
 					}
-					fmt.Printf("%s \n", string(buf))
+
 				}
 			}
 		}
@@ -286,18 +269,13 @@ func sortCalc(mass [][]byte, val map[byte]bool) [][]byte {
 		}
 		i++
 	}
-	fmt.Printf("mass %s \n", mass)
-	fmt.Printf("newsLICW %s \n", newSlice)
 
 	for len(mass) > 0 {
-		fmt.Printf("mass %s \n", mass)
-		fmt.Printf("newsLICW %s \n", newSlice)
+
 		newSlice = append(newSlice, mass[0])
 		mass = mass[1:]
 
 	}
-	fmt.Printf("mass %s \n", mass)
-	fmt.Printf("newsLICW %s \n", newSlice)
 
 	return newSlice
 }
@@ -350,14 +328,14 @@ func parseData(data []byte) {
 		}
 		if data[i] == '=' && len(data) > i+1 && data[i+1] >= 'A' && data[i+1] <= 'Z' {
 			i++
-			for i < len(data) && data[i] != ' ' && data[i] != '\n' {
+			for i < len(data) && data[i] != ' ' && data[i] != '\n' && data[i] >= 'A' && data[i] <= 'Z' {
 				val[data[i]] = true
 				i++
 			}
 		} else {
 			if len(data) > i+1 && data[i] == '?' {
 				i++
-				for i < len(data) && data[i] != ' ' && data[i] != '\n' {
+				for i < len(data) && data[i] != ' ' && data[i] != '\n' && data[i] >= 'A' && data[i] <= 'Z' {
 
 					res = append(res, data[i])
 
