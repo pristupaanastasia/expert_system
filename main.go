@@ -117,7 +117,7 @@ func binapp(add map[byte]bool, history []byte, addbin int) map[byte]bool {
 	for i > -1 {
 
 		log.Printf("add %b \n", addbin)
-		buf = buf & 000000001
+		buf = buf & 000000000000001
 		log.Printf("buf posle %b %s \n", buf, string(history[i]))
 		if buf == 1 {
 			add[history[i]] = true
@@ -129,9 +129,6 @@ func binapp(add map[byte]bool, history []byte, addbin int) map[byte]bool {
 		buf = addbin
 	}
 
-	for k, v := range add {
-		log.Println(string(k), " ", v)
-	}
 	return add
 }
 
@@ -157,6 +154,7 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 	min := -1
 	for {
 		for {
+			flag = 0
 			valueByte = binapp(valueByte, history, addbin)
 			for i := range mass {
 				if !recurs(mass[i], valueByte) {
@@ -164,11 +162,11 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 					flag = 1
 				}
 			}
-			if flag == 0 || addbin > len(history)*2 {
+			if flag == 0 || addbin > len(history)*len(history) {
 				log.Printf("Done")
 				break
 			}
-			flag = 0
+
 			addbin++
 		}
 		buf := 0
@@ -177,13 +175,13 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 				buf++
 			}
 		}
-		if buf < min || min == -1 {
+		if (buf <= min || min == -1) && flag == 0 {
 			min = buf
 			for k, v := range valueByte {
 				minbaf[k] = v
 			}
 		}
-		if addbin > len(history)*2 {
+		if addbin > len(history)*len(history) { //алгоритм окончания другой (когда все тру)
 			break
 		}
 		addbin++
