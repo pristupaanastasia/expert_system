@@ -22,11 +22,11 @@ func xor(a bool, b bool) bool {
 	return (a || b) && !(a && b)
 }
 func ifOnlyIf(a bool, b bool) bool {
-	if (a && b) || (!a && !b) {
+	if (a && b) {
 		return true
 	}
-	if (a && !b) || (!a && b) {
-		return false
+	if (!a && !b) {
+		return true
 	}
 	return false
 }
@@ -56,14 +56,14 @@ func recurs(mass []byte, valueByte map[byte]bool) bool {
 
 	log.Println(string(mass))
 	for _, val := range mass {
-		if _, ok := valueByte[val]; ok && (val >= 'A') && (val <= 'Z') {
+		if  (val >= 'A') && (val <= 'Z') {
+			if _, ok := valueByte[val]; !ok  {
+				valueByte[val] = false
+			}
 			st = append(st, valueByte[val])
-			log.Println(st)
 
 		} else {
-			if _, ok = valueByte[val]; !ok && (val >= 'A') && (val <= 'Z') {
-				return false
-			}
+			
 			if val == '!' && len(st) > 0 {
 
 				st[len(st)-1] = !st[len(st)-1]
@@ -132,6 +132,16 @@ func binapp(add map[byte]bool, history []byte, addbin int) map[byte]bool {
 	return add
 }
 
+func cancel(val map[byte]bool, history []byte) bool{
+
+	for _, v := range history{
+		if val[v] == false{
+			return false
+		}
+	}
+	return true
+}
+
 func computation(mass [][]byte, val map[byte]bool, res []byte) {
 
 	var valueByte map[byte]bool
@@ -146,7 +156,12 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 			history = append(history, k)
 		}
 	}
-	history = append(history, res...)
+	for _ ,v := range res{
+		if valueByte[v] == false{
+		history = append(history, v)
+		}
+	}
+	
 	flag := 0
 	addbin := 0
 	log.Println(string(history))
@@ -157,12 +172,12 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 			flag = 0
 			valueByte = binapp(valueByte, history, addbin)
 			for i := range mass {
-				if !recurs(mass[i], valueByte) {
-					log.Println(recurs(mass[i], valueByte))
+				if recurs(mass[i], valueByte)  == false{
+					log.Println(recurs(mass[i], valueByte),string(mass[i]) ,"lox")
 					flag = 1
 				}
 			}
-			if flag == 0 || addbin > len(history)*len(history) {
+			if flag == 0 || cancel(valueByte, history) {
 				log.Printf("Done")
 				break
 			}
@@ -175,13 +190,13 @@ func computation(mass [][]byte, val map[byte]bool, res []byte) {
 				buf++
 			}
 		}
-		if (buf <= min || min == -1) && flag == 0 {
+		if (buf < min || min == -1) && flag == 0 {
 			min = buf
 			for k, v := range valueByte {
 				minbaf[k] = v
 			}
 		}
-		if addbin > len(history)*len(history) { //алгоритм окончания другой (когда все тру)
+		if cancel(valueByte, history) { //алгоритм окончания другой (когда все тру)
 			break
 		}
 		addbin++
@@ -341,7 +356,21 @@ func parseData(data []byte) {
 				}
 			} else {
 				if data[i] >= 'A' && data[i] <= 'Z' {
-					val[data[i]] = false
+					//val[data[i]] = false
+
+					for data[i] != '\n' && data[i] != '#' && i < len(data){
+						if data[i] == '=' && data[i+1] == '>' || data[i] == '<' && data[i+1] =='=' && data[i+2]=='>'{
+							for data[i] != '\n' && data[i] != '#' && i < len(data){
+								if data[i] >= 'A' && data[i] <= 'Z'{
+									val[data[i]] = false
+								}
+								i++
+							}
+						}else{
+							i++
+						}
+					}
+					
 				}
 				i++
 			}
