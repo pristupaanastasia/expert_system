@@ -1,10 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
+	"strings"
+
+	//"io"
 	"log"
 	"os"
+)
+/*
+commits := map[string]int{
+    "rsc": 3711,
+    "r":   2138,
+    "gri": 1908,
+    "adg": 912,
+}
+ */
+var (
+	allowedSymbols	string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ=><+|!^?()"
 )
 
 type point struct {
@@ -54,7 +68,7 @@ func initOper() map[byte]int {
 func recurs(mass []byte, valueByte map[byte]bool) bool {
 	st := make([]bool, 0)
 
-	log.Println(string(mass))
+//	log.Println(string(mass))
 	for _, val := range mass {
 		if  (val >= 'A') && (val <= 'Z') {
 			if _, ok := valueByte[val]; !ok  {
@@ -270,7 +284,7 @@ func sortCalc(mass [][]byte, val map[byte]bool) [][]byte {
 	newSlice := make([][]byte, 0)
 	i := 0
 	for i < len(mass) {
-		fmt.Printf("mass i %s %d\n", mass[i], i)
+//		fmt.Printf("mass i %s %d\n", mass[i], i)
 		for _, value := range mass[i] {
 			if _, ok := val[value]; ok && len(mass) > 2 {
 				newSlice = append(newSlice, mass[i])
@@ -292,6 +306,50 @@ func sortCalc(mass [][]byte, val map[byte]bool) [][]byte {
 
 	return newSlice
 }
+
+func getOpsLines(lines []string) []string{
+	i := 0
+	res := make([]string, 0)
+	for i < len(lines){
+		if lines[i][0] != '?' && lines[i][0] != '='{
+			res = append(res, lines[i])
+		}
+		i++
+	}
+	return res
+}
+
+func calculv2(lines []string, val map[byte]bool, res []byte){
+	mass := make([][]byte, 0)
+//	buf := make([]byte, 0)
+	//j := 0
+	i := 0
+	oper := initOper() // TODO: it's a global var
+	ops := getOpsLines(lines)
+	for i < len(ops){
+		k := 0
+		buf := make([]byte, 0)
+		for k < len(ops[i]) {
+			if ops[i][k] == '<' && k < len(ops[i])-2 && ops[i][k]+1 == '=' && ops[i][k+2] == '>' {
+				buf = append(buf, '-')
+				k += 2
+			} else {
+				buf = append(buf, ops[i][k])
+			}
+			k++
+		}
+		mass = append(mass, buf)
+		i++
+	}
+
+	if len(mass) > 2 {
+		mass = sortCalc(mass, val)
+	}
+
+	mass = polsky(mass, oper)
+	computation(mass, val, res)
+}
+
 
 func calcul(data []byte, val map[byte]bool, res []byte) {
 	mass := make([][]byte, 0)
@@ -329,84 +387,186 @@ func calcul(data []byte, val map[byte]bool, res []byte) {
 	computation(mass, val, res)
 }
 
-func parseData(data []byte) {
-	val := make(map[byte]bool)
-	res := make([]byte, 0)
-	i := 0
-	for i < len(data) {
-		if data[i] == '#' {
-			for data[i] != '\n' && i < len(data)-1 {
-				i++
-			}
-		}
-		if data[i] == '=' && len(data) > i+1 && data[i+1] >= 'A' && data[i+1] <= 'Z' {
-			i++
-			for i < len(data) && data[i] != ' ' && data[i] != '\n' && data[i] >= 'A' && data[i] <= 'Z' {
-				val[data[i]] = true
-				i++
-			}
-		} else {
-			if len(data) > i+1 && data[i] == '?' {
-				i++
-				for i < len(data) && data[i] != ' ' && data[i] != '\n' && data[i] >= 'A' && data[i] <= 'Z' {
-
-					res = append(res, data[i])
-
-					i++
-				}
-			} else {
-				if data[i] >= 'A' && data[i] <= 'Z' {
-					//val[data[i]] = false
-
-					for data[i] != '\n' && data[i] != '#' && i < len(data){
-						if data[i] == '=' && data[i+1] == '>' || data[i] == '<' && data[i+1] =='=' && data[i+2]=='>'{
-							for data[i] != '\n' && data[i] != '#' && i < len(data){
-								if data[i] >= 'A' && data[i] <= 'Z'{
-									val[data[i]] = false
-								}
-								i++
-							}
-						}else{
-							i++
-						}
-					}
-					
-				}
-				i++
-			}
-		}
-
-	}
-	fmt.Printf(string(res))
-	calcul(data, val, res)
+func parseData(lines []string, val map[byte]bool, res []byte) {
+	calculv2(lines, val, res)
 }
 
-func main() {
-	if len(os.Args) > 1 {
+func removeComment(line string) string{
+	pepega := strings.Split(line, "#")
+	return pepega[0]
+}
 
-		data := make([]byte, 0)
+func isComment(line string) bool{
+	i := 0
+	for i < len(line){
+		if line[i] == ' '{
+			i++
+		} else{
+			break
+		}
+	}
+	return line[i] == '#'
+}
+
+func isEmpty(line string) bool{
+	i:= 0
+	for i < len(line){
+		if line[i] != ' '{
+			return false}
+		i++
+	}
+	return true
+}
+
+func removeInvalid(line string) string{
+	i := 0
+	for i < len(line){
+		if strings.Contains(allowedSymbols, string(line[i])){
+			i++
+		}else{
+			line = strings.ReplaceAll(line, string(line[i]), "")
+			i = 0
+		}
+	}
+	return line
+}
+
+func parserv2(file *os.File) ([]string, error) {
+	var result = make([]string, 0)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		text := scanner.Text()
+		if err := scanner.Err(); err != nil{
+			return nil, err
+		}
+		lineLen := len(text)
+		if lineLen < 1 || isEmpty(text) || isComment(text){
+			continue
+		}
+		if strings.Contains(text, "#"){
+			text = removeComment(text)
+		}
+		text = removeInvalid(text)
+		if len(text) > 0{
+			result = append(result, text)
+		}
+	}
+	return result, nil
+}
+
+func findFacts(lines []string) map[byte]bool{
+	val := make(map[byte]bool)
+	i := 0
+	for i < len(lines){
+		k := 0
+		if lines[i][k] != '?' && lines[i][k] != '='{
+			for k < len(lines[i]) {
+				if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
+					val[lines[i][k]] = false
+				}
+				k++
+			}
+		}
+		i++
+	}
+	return val
+}
+
+func updateFacts(lines []string, val map[byte]bool){
+	i := 0
+	for i < len(lines){
+		if lines[i][0] == '=' && len(lines[i]) > 1 {
+			k := 0
+			for k < len(lines[i]){
+				if lines[i][k] >= 'A' && lines[i][k] <= 'Z'{
+					val[lines[i][k]] = true
+				}
+				k++
+			}
+		}
+		i++
+	}
+}
+
+func getUnknown(lines []string) []byte {
+	res := make([]byte, 0)
+	i := 0
+	for i < len(lines){
+		k := 0
+		if lines[i][k] == '?'{
+			for k < len(lines[i]){
+				if lines[i][k] >= 'A' && lines[i][k] <= 'Z'{
+					res = append(res, lines[i][k])
+				}
+				k++
+			}
+		}
+		i++
+	}
+	return res
+}
+
+func parseDatav2(lines []string) (map[byte]bool, []byte){
+
+	val := findFacts(lines)
+	if len(val) < 1{
+		fmt.Printf("Failed to find Facts")
+		os.Exit(0)
+	}
+	updateFacts(lines, val)
+	res := getUnknown(lines)
+	if len(res) < 1{
+		fmt.Printf("Failed to find Unknown Values")
+		os.Exit(0)
+	}
+	return val, res
+}
+
+func validateData(lines []string) int {
+	i := 0
+	res := 0
+	if len(lines) < 3{
+		return 0
+	}
+	for i < len(lines){
+		if(lines[i][0] == '='){
+			res++
+		}
+		if (lines[i][0] == '?') {
+			res++
+		}
+		i++
+	}
+	return res
+}
+
+
+
+func main() {
+
+	if len(os.Args) > 1 {
 		file, err := os.Open(os.Args[1])
 		defer func(file *os.File) {
 			err := file.Close()
 			if err != nil {
-
 			}
 		}(file)
 		if err != nil {
 			fmt.Printf(err.Error())
 			os.Exit(1)
 		}
-		buf := make([]byte, 64)
-		for {
-			n, err := file.Read(buf)
-			if err == io.EOF {
-				break
+		if data, err := parserv2(file); err != nil {
+			fmt.Println(err.Error())
+			return
+		} else {
+			if validateData(data) != 2{
+				fmt.Printf("ivalid input")
+				return
 			}
-			fmt.Print(string(buf[:n]))
-			buf = buf[:n]
-			data = append(data, buf...)
+			val, res := parseDatav2(data)
+			parseData(data, val, res)
 		}
-		parseData(data)
+
 	} else {
 		fmt.Printf("input file doesnt exist")
 		os.Exit(1)
