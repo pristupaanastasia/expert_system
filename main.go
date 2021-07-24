@@ -61,8 +61,9 @@ func ifOnlyIf(a bool, b bool, res bool) (bool, bool) {
 }
 
 func implies(a bool, b bool, res bool) (bool, bool) {
-	if a && !b && !res {
-		return false, false
+	log.Println(a, b)
+	if !a || b {
+		return true, b
 	}
 	if res {
 		if b == false {
@@ -70,31 +71,36 @@ func implies(a bool, b bool, res bool) (bool, bool) {
 		} else {
 			b = false
 		}
-		if a && !b && !res {
-			return false, b
+		if !a || b {
+			return true, b
 		}
 	}
-	return true, b
+	return false, b
 
 }
 func initOper() map[byte]int {
 	oper := make(map[byte]int)
 	oper['('] = 4
 	oper[')'] = 4
-	oper['!'] = 1
-	oper['+'] = 2
+	oper['!'] = 2
+	oper['+'] = 1
 	oper['|'] = 2
-	oper['^'] = 2
+	oper['^'] = 1
 	oper['-'] = 3 // <=>
 	oper['='] = 3 //=>
 	return oper
 }
 
-func recurs(mass []byte, valueByte map[byte]int) bool {
+func recurs(mass []byte, valueByte map[byte]int, j int) bool {
 	st := make([]bool, 0)
 
 	res := false
+	var n byte
+	var o byte
+	o = 'a'
+	n = 'a'
 	log.Println(string(mass))
+	oper := initOper()
 	for i, val := range mass {
 		if (val >= 'A') && (val <= 'Z') {
 			if _, ok := valueByte[val]; !ok {
@@ -107,12 +113,21 @@ func recurs(mass []byte, valueByte map[byte]int) bool {
 				st = append(st, false)
 			}
 			if valueByte[val] == 0 {
-				if i < len(mass) && (mass[i+1] == '=' || mass[i+1] == '-') { //а вдруг тут =>a&b  ab&=
+
+				if i < len(mass) && (oper[mass[i+1]] == 3 || oper[mass[i+2]] == 3) && (n == 'a' || j > 3) { //а вдруг тут =>a&b  ab&=
 					res = true
+					n = val
 					st = append(st, false)
+
 				} else {
-					res = true
-					st = append(st, false)
+					if i < len(mass) && ((oper[mass[i+1]] == 2 || len(mass) > i+2 && oper[mass[i+2]] == 2 || len(mass) > i+3 && oper[mass[i+3]] == 2) ||
+						(oper[mass[i+1]] == 1 || len(mass) > i+2 && oper[mass[i+2]] == 1 || len(mass) > i+3 && oper[mass[i+3]] == 1)) && (o == 'a' || j > 3) {
+						o = val
+						res = true
+						st = append(st, false)
+					} else {
+						return false
+					}
 				}
 			}
 
@@ -136,23 +151,34 @@ func recurs(mass []byte, valueByte map[byte]int) bool {
 					}
 					if val == '=' {
 						buf, b = implies(st[len(st)-2], st[len(st)-1], res)
-						if buf && res {
+						if buf && res && n != 'a' {
 							if b {
-								valueByte[mass[i-1]] = 1
+								valueByte[n] = 1
 							} else {
-								valueByte[mass[i-1]] = -1
+								valueByte[n] = -1
 							}
+
+							log.Println(string(mass[i-1]))
 						}
 					}
 					if val == '+' {
 
 						buf = and(st[len(st)-2], st[len(st)-1])
+						if o != 'a' {
+							valueByte[o] = -1
+						}
 					}
 					if val == '^' {
 						buf = xor(st[len(st)-2], st[len(st)-1])
+						if o != 'a' {
+							valueByte[o] = -1
+						}
 					}
 					if val == '|' {
 						buf = or(st[len(st)-2], st[len(st)-1])
+						if o != 'a' {
+							valueByte[o] = -1
+						}
 					}
 
 					st = st[:len(st)-2]
@@ -212,9 +238,10 @@ func cancel(val map[byte]bool, history []byte) bool {
 func computation(mass [][]byte, val map[byte]int, res []byte) {
 
 	flag := 0
+	j := 0
 	for {
 		for i := range mass {
-			if !recurs(mass[i], val) {
+			if !recurs(mass[i], val, j) {
 				flag = 1
 			}
 		}
@@ -222,68 +249,18 @@ func computation(mass [][]byte, val map[byte]int, res []byte) {
 			log.Println(string(key), v)
 		}
 		if flag == 0 {
-			break
+			for i := range mass {
+				if !recurs(mass[i], val, j) {
+					flag = 1
+				}
+			}
+			if flag == 0 {
+				break
+			}
 		}
+		j++
 		flag = 0
 	}
-	//var valueByte map[byte]bool
-	////result := make([]byte, 0)
-	//
-	//var history []byte
-	//valueByte = make(map[byte]bool)
-	//
-	//for k, v := range val {
-	//	valueByte[k] = v
-	//	if v == false && nores(k, res) {
-	//		history = append(history, k)
-	//	}
-	//}
-	//for _ ,v := range res{
-	//	if valueByte[v] == false{
-	//	history = append(history, v)
-	//	}
-	//}
-	//
-	//flag := 0
-	//addbin := 0
-	//log.Println(string(history))
-	//minbaf := make(map[byte]bool)
-	//min := -1
-	//for {
-	//	for {
-	//		flag = 0
-	//		valueByte = binapp(valueByte, history, addbin)
-	//		for i := range mass {
-	//			if recurs(mass[i], valueByte)  == false{
-	//				log.Println(recurs(mass[i], valueByte),string(mass[i]) ,"lox")
-	//				flag = 1
-	//			}
-	//		}
-	//		if flag == 0 || cancel(valueByte, history) {
-	//			log.Printf("Done")
-	//			break
-	//		}
-	//
-	//		addbin++
-	//	}
-	//	buf := 0
-	//	for _, v := range valueByte {
-	//		if v == true {
-	//			buf++
-	//		}
-	//	}
-	//	if (buf < min || min == -1) && flag == 0 {
-	//		min = buf
-	//		for k, v := range valueByte {
-	//			minbaf[k] = v
-	//		}
-	//	}
-	//	if cancel(valueByte, history) { //алгоритм окончания другой (когда все тру)
-	//		break
-	//	}
-	//	addbin++
-	//}
-	//
 	fmt.Printf("RESULT: ")
 	for key, value := range val {
 
@@ -319,6 +296,7 @@ func polsky(valOper [][]byte, oper map[byte]int) [][]byte {
 							stackOper = stackOper[:j]
 							j--
 						}
+						stackOper = stackOper[:j]
 					} else {
 						if len(stackOper) > 0 && oper[value] >= oper[stackOper[len(stackOper)-1]] {
 							for len(stackOper) > 0 && oper[value] >= oper[stackOper[len(stackOper)-1]] {

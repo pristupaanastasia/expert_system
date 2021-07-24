@@ -1,0 +1,13 @@
+#Example input 1:
+B + !C => A
+
+#[INITIAL FACTS HERE]
+?A
+
+=BC
+
+#With =, A should be false.
+#With =B, A should be true.
+#With =C, A should be false.
+#With =BC, A should be false.
+#Same conclusion in multiple rules

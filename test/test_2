@@ -5,7 +5,7 @@ B => C
 #[INITIAL FACTS HERE]
 ?A
 
-=D
+=
 #With =, A should be false.
 #With =D, A should be true.
 #With =E, A should be true.

@@ -1,0 +1,23 @@
+#Example input 1:
+A | B + C => E
+(F | G) + H => E
+
+#[INITIAL FACTS HERE]
+?E
+
+=AC
+
+#With =, E should be false.
+
+#With =A, E should be true.
+#With =B, E should be false.
+#With =C, E should be false.
+#With =AC, E should be false.
+#With =BC, E should be true.
+
+#With =F, E should be false.
+#With =G, E should be false.
+#With =H, E should be false.
+#With =FH, E should be true.
+#With =GH, E should be true.
+#Data structures

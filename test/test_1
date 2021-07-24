@@ -1,4 +1,4 @@
-
+#Example input:
 B => A 
 D + E => B 
 G + H => F 
@@ -8,11 +8,9 @@ L + M => K
 O + P => L + N 
 N => M 
 
-#[INITIAL FACTS HERE] 
-
+#[INITIAL FACTS HERE]
 ?AFKP 
 
-=DEIJP
-
-#With =DEIJOP AFKP is true. 
-#With =DEIJP AFP is true, K is false. 
+#With =DEIJOP, AFKP is true.
+#With =DEIJP, AFP is true, K is false.
+#OR conditions
