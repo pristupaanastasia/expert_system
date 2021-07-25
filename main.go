@@ -21,10 +21,7 @@ func or(a bool, b bool) bool {
 	return a || b
 }
 
-func and(a bool, b bool, res bool) (bool, bool) {
-	if res {
-
-	}
+func and(a bool, b bool) bool {
 	return a && b
 }
 
@@ -126,6 +123,7 @@ func recurs(mass []byte, valueByte map[byte]int, j int, right []byte) bool {
 				} else {
 					if i < len(mass) && !inRight(val, right) && (o == 'a' && j > 2) {
 						o = val
+						res = true
 						st = append(st, false)
 					} else {
 						return false
@@ -437,6 +435,7 @@ func get_right_hand(lines []string) []byte {
 	return res
 }
 
+
 func parseData(lines []string, val map[byte]int, res []byte, rightHand []byte) {
 	calculv2(lines, val, res, rightHand)
 }
@@ -482,6 +481,11 @@ func removeInvalid(line string) string {
 	return line
 }
 
+func reverseImply(source string) string{
+	splitSource := strings.Split(source, "<=")
+	return splitSource[1] + "=>" + splitSource[0]
+}
+
 func parserv2(file *os.File) ([]string, error) {
 	var result = make([]string, 0)
 	scanner := bufio.NewScanner(file)
@@ -496,6 +500,9 @@ func parserv2(file *os.File) ([]string, error) {
 		}
 		if strings.Contains(text, "#") {
 			text = removeComment(text)
+		}
+		if strings.Contains(text, "<=") && !strings.Contains(text, "<=>"){
+			text = reverseImply(text)
 		}
 		text = removeInvalid(text)
 		if len(text) > 0 {
@@ -609,7 +616,7 @@ func main() {
 			os.Exit(1)
 		}
 		if data, err := parserv2(file); err != nil {
-			//	fmt.Println(err.Error())
+		//	fmt.Println(err.Error())
 			return
 		} else {
 			if validateData(data) != 2 {
