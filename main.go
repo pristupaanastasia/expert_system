@@ -10,14 +10,6 @@ import (
 	"os"
 )
 
-/*
-commits := map[string]int{
-    "rsc": 3711,
-    "r":   2138,
-    "gri": 1908,
-    "adg": 912,
-}
-*/
 var (
 	allowedSymbols string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ=><+|!^?()"
 )
@@ -114,7 +106,7 @@ func recurs(mass []byte, valueByte map[byte]int, j int) bool {
 			}
 			if valueByte[val] == 0 {
 
-				if i < len(mass) && (oper[mass[i+1]] == 3 || oper[mass[i+2]] == 3) && (n == 'a' || j > 3) { //а вдруг тут =>a&b  ab&=
+				if i < len(mass) && (oper[mass[i+1]] == 3 || oper[mass[i+2]] == 3 || oper[mass[i+2]] == 2 && oper[mass[i+3]] == 3  ) && (n == 'a' && j > 2) { //а вдруг тут =>a&b  ab&=
 					res = true
 					n = val
 					st = append(st, false)
@@ -239,6 +231,10 @@ func computation(mass [][]byte, val map[byte]int, res []byte) {
 
 	flag := 0
 	j := 0
+	for key, value := range val {
+
+		fmt.Printf("key %s val %d \n", string(key), value)
+	}
 	for {
 		for i := range mass {
 			if !recurs(mass[i], val, j) {
@@ -511,14 +507,14 @@ func findFacts(lines []string) map[byte]int {
 	i := 0
 	for i < len(lines) {
 		k := 0
-		if lines[i][k] != '?' && lines[i][k] != '=' {
+/*		if lines[i][k] != '?' && lines[i][k] != '=' {*/
 			for k < len(lines[i]) {
 				if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
 					val[lines[i][k]] = 0
 				}
 				k++
 			}
-		}
+		//}
 		i++
 	}
 	return val
@@ -549,7 +545,9 @@ func getUnknown(lines []string, val map[byte]int) []byte {
 			for k < len(lines[i]) {
 				if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
 					res = append(res, lines[i][k])
-					val[lines[i][k]] = 0
+					if _,ok := val[lines[i][k]]; !ok {
+						val[lines[i][k]] = 0
+					}
 				}
 				k++
 			}
@@ -607,7 +605,7 @@ func main() {
 			os.Exit(1)
 		}
 		if data, err := parserv2(file); err != nil {
-			fmt.Println(err.Error())
+		//	fmt.Println(err.Error())
 			return
 		} else {
 			if validateData(data) != 2 {
