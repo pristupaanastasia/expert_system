@@ -361,7 +361,7 @@ func getOpsLines(lines []string) []string {
 	return res
 }
 
-func calculv2(lines []string, val map[byte]int, res []byte) {
+func calculv2(lines []string, val map[byte]int, res []byte, rightHand []byte) {
 	mass := make([][]byte, 0)
 	//	buf := make([]byte, 0)
 	//j := 0
@@ -398,44 +398,32 @@ func calculv2(lines []string, val map[byte]int, res []byte) {
 	computation(mass, val, res)
 }
 
-func calcul(data []byte, val map[byte]int, res []byte) {
-	mass := make([][]byte, 0)
-	buf := make([]byte, 0)
-	j := 0
-	oper := initOper()
-	for i := range data {
-		if data[i] == '\n' && len(data) > i+1 && data[i+1] >= 'A' && data[i+1] <= 'Z' {
-			buf = make([]byte, 0)
-			i++
-			for data[i] != '\n' && data[i] != '#' {
-				if (data[i] >= 'A' && data[i] <= 'Z') || (data[i] == '=' && data[i+1] == '>') || oper[data[i]] > 0 {
-					if data[i] == '=' && data[i+1] == '>' && data[i-1] == '<' {
-						buf = append(buf, '-')
-					} else {
-						buf = append(buf, data[i])
-					}
-				}
-				i++
+func get_right_hand(lines []string) []byte {
+	res := make([]byte, 0)
+	i := 0
+	for i < len(lines){
+		if (strings.Contains(lines[i], "=") && lines[i][0] != '='){
+			splitLine := strings.Split(lines[i], "=")
+			if len(splitLine) != 2{
+				fmt.Print("some wierd amount of '=' symbols found!\n")
+				os.Exit(0)
 			}
-			mass = append(mass, []byte{})
-			mass[j] = append(mass[j], buf...)
-			j++
+			k := 0
+			for k < len(splitLine[1]){
+				if splitLine[1][k] >= 'A' && splitLine[1][k] <= 'Z' && strings.Contains(string(res), string(splitLine[1][k])) == false{
+					res = append(res, splitLine[1][k])
+				}
+				k++
+			}
 		}
+		i++
 	}
-	for _, value := range mass {
-		fmt.Println("SORT:", string(value))
-	}
-
-	if len(mass) > 2 {
-		mass = sortCalc(mass, val)
-	}
-
-	mass = polsky(mass, oper)
-	computation(mass, val, res)
+	return res
 }
 
-func parseData(lines []string, val map[byte]int, res []byte) {
-	calculv2(lines, val, res)
+
+func parseData(lines []string, val map[byte]int, res []byte, rightHand []byte) {
+	calculv2(lines, val, res, rightHand)
 }
 
 func removeComment(line string) string {
@@ -557,7 +545,7 @@ func getUnknown(lines []string, val map[byte]int) []byte {
 	return res
 }
 
-func parseDatav2(lines []string) (map[byte]int, []byte) {
+func parseDatav2(lines []string) (map[byte]int, []byte, []byte) {
 
 	val := findFacts(lines)
 	if len(val) < 1 {
@@ -566,11 +554,12 @@ func parseDatav2(lines []string) (map[byte]int, []byte) {
 	}
 	updateFacts(lines, val)
 	res := getUnknown(lines, val)
+	rightHand := get_right_hand(lines)
 	if len(res) < 1 {
 		fmt.Printf("Failed to find Unknown Values")
 		os.Exit(0)
 	}
-	return val, res
+	return val, res, rightHand
 }
 
 func validateData(lines []string) int {
@@ -612,8 +601,8 @@ func main() {
 				fmt.Printf("ivalid input")
 				return
 			}
-			val, res := parseDatav2(data)
-			parseData(data, val, res)
+			val, res, rightHand := parseDatav2(data)
+			parseData(data, val, res, rightHand)
 		}
 
 	} else {
