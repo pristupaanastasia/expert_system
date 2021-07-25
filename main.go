@@ -467,6 +467,11 @@ func removeInvalid(line string) string {
 	return line
 }
 
+func reverseImply(source string) string{
+	splitSource := strings.Split(source, "<=")
+	return splitSource[1] + "=>" + splitSource[0]
+}
+
 func parserv2(file *os.File) ([]string, error) {
 	var result = make([]string, 0)
 	scanner := bufio.NewScanner(file)
@@ -481,6 +486,9 @@ func parserv2(file *os.File) ([]string, error) {
 		}
 		if strings.Contains(text, "#") {
 			text = removeComment(text)
+		}
+		if strings.Contains(text, "<=") && !strings.Contains(text, "<=>"){
+			text = reverseImply(text)
 		}
 		text = removeInvalid(text)
 		if len(text) > 0 {
@@ -594,7 +602,7 @@ func main() {
 			os.Exit(1)
 		}
 		if data, err := parserv2(file); err != nil {
-		//	fmt.Println(err.Error())
+			fmt.Println(err.Error())
 			return
 		} else {
 			if validateData(data) != 2 {
