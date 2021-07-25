@@ -21,7 +21,10 @@ func or(a bool, b bool) bool {
 	return a || b
 }
 
-func and(a bool, b bool) bool {
+func and(a bool, b bool, res bool) (bool, bool) {
+	if res {
+
+	}
 	return a && b
 }
 
@@ -83,7 +86,16 @@ func initOper() map[byte]int {
 	return oper
 }
 
-func recurs(mass []byte, valueByte map[byte]int, j int) bool {
+func inRight(a byte, right []byte) bool {
+	for _, val := range right {
+		if val == a {
+			return true
+		}
+	}
+	return false
+}
+
+func recurs(mass []byte, valueByte map[byte]int, j int, right []byte) bool {
 	st := make([]bool, 0)
 
 	res := false
@@ -106,16 +118,14 @@ func recurs(mass []byte, valueByte map[byte]int, j int) bool {
 			}
 			if valueByte[val] == 0 {
 
-				if i < len(mass) && (oper[mass[i+1]] == 3 || oper[mass[i+2]] == 3 || oper[mass[i+2]] == 2 && oper[mass[i+3]] == 3  ) && (n == 'a' && j > 2) { //а вдруг тут =>a&b  ab&=
+				if j > 2 && n == 'a' && inRight(val, right) { //а вдруг тут =>a&b  ab&=
 					res = true
 					n = val
 					st = append(st, false)
 
 				} else {
-					if i < len(mass) && ((oper[mass[i+1]] == 2 || len(mass) > i+2 && oper[mass[i+2]] == 2 || len(mass) > i+3 && oper[mass[i+3]] == 2) ||
-						(oper[mass[i+1]] == 1 || len(mass) > i+2 && oper[mass[i+2]] == 1 || len(mass) > i+3 && oper[mass[i+3]] == 1)) && (o == 'a' || j > 3) {
+					if i < len(mass) && !inRight(val, right) && (o == 'a' && j > 2) {
 						o = val
-						res = true
 						st = append(st, false)
 					} else {
 						return false
@@ -154,8 +164,14 @@ func recurs(mass []byte, valueByte map[byte]int, j int) bool {
 						}
 					}
 					if val == '+' {
-
-						buf = and(st[len(st)-2], st[len(st)-1])
+						buf, b = and(st[len(st)-2], st[len(st)-1], res)
+						if buf && res {
+							if b {
+								valueByte[mass[i-1]] = 1
+							} else {
+								valueByte[mass[i-1]] = -1
+							}
+						}
 						if o != 'a' {
 							valueByte[o] = -1
 						}
@@ -227,7 +243,7 @@ func cancel(val map[byte]bool, history []byte) bool {
 	return true
 }
 
-func computation(mass [][]byte, val map[byte]int, res []byte) {
+func computation(mass [][]byte, val map[byte]int, res []byte, rightHand []byte) {
 
 	flag := 0
 	j := 0
@@ -237,7 +253,7 @@ func computation(mass [][]byte, val map[byte]int, res []byte) {
 	}
 	for {
 		for i := range mass {
-			if !recurs(mass[i], val, j) {
+			if !recurs(mass[i], val, j, rightHand) {
 				flag = 1
 			}
 		}
@@ -395,22 +411,22 @@ func calculv2(lines []string, val map[byte]int, res []byte, rightHand []byte) {
 	}
 
 	mass = polsky(mass, oper)
-	computation(mass, val, res)
+	computation(mass, val, res, rightHand)
 }
 
 func get_right_hand(lines []string) []byte {
 	res := make([]byte, 0)
 	i := 0
-	for i < len(lines){
-		if (strings.Contains(lines[i], "=") && lines[i][0] != '='){
+	for i < len(lines) {
+		if strings.Contains(lines[i], "=") && lines[i][0] != '=' {
 			splitLine := strings.Split(lines[i], "=")
-			if len(splitLine) != 2{
+			if len(splitLine) != 2 {
 				fmt.Print("some wierd amount of '=' symbols found!\n")
 				os.Exit(0)
 			}
 			k := 0
-			for k < len(splitLine[1]){
-				if splitLine[1][k] >= 'A' && splitLine[1][k] <= 'Z' && strings.Contains(string(res), string(splitLine[1][k])) == false{
+			for k < len(splitLine[1]) {
+				if splitLine[1][k] >= 'A' && splitLine[1][k] <= 'Z' && strings.Contains(string(res), string(splitLine[1][k])) == false {
 					res = append(res, splitLine[1][k])
 				}
 				k++
@@ -420,7 +436,6 @@ func get_right_hand(lines []string) []byte {
 	}
 	return res
 }
-
 
 func parseData(lines []string, val map[byte]int, res []byte, rightHand []byte) {
 	calculv2(lines, val, res, rightHand)
@@ -495,13 +510,13 @@ func findFacts(lines []string) map[byte]int {
 	i := 0
 	for i < len(lines) {
 		k := 0
-/*		if lines[i][k] != '?' && lines[i][k] != '=' {*/
-			for k < len(lines[i]) {
-				if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
-					val[lines[i][k]] = 0
-				}
-				k++
+		/*		if lines[i][k] != '?' && lines[i][k] != '=' {*/
+		for k < len(lines[i]) {
+			if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
+				val[lines[i][k]] = 0
 			}
+			k++
+		}
 		//}
 		i++
 	}
@@ -533,7 +548,7 @@ func getUnknown(lines []string, val map[byte]int) []byte {
 			for k < len(lines[i]) {
 				if lines[i][k] >= 'A' && lines[i][k] <= 'Z' {
 					res = append(res, lines[i][k])
-					if _,ok := val[lines[i][k]]; !ok {
+					if _, ok := val[lines[i][k]]; !ok {
 						val[lines[i][k]] = 0
 					}
 				}
@@ -594,7 +609,7 @@ func main() {
 			os.Exit(1)
 		}
 		if data, err := parserv2(file); err != nil {
-		//	fmt.Println(err.Error())
+			//	fmt.Println(err.Error())
 			return
 		} else {
 			if validateData(data) != 2 {
